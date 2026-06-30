@@ -40,20 +40,9 @@ const TABELA_INIT = [
   { faixaLabel:"17500 a 20000 m", mMin:17500,mMax:20000, valorM3xM:21.71 },
 ];
 
-const VIAGENS_SEED = [
-  { id:1,  seq:14440, caminhaoId:1, placa:"ABC-1234", motorista:"João Silva",   freteiro:"Transportes Silva", volumeM3:12, destinoId:1, destino:"Estrada Vicinal KM 4", distanciaM:4200,  faixa:"3000 a 5000 m",   valorM3xM:8.09,  valorTotal:407.74,  data:"2026-06-03", hora:"07:42", numero:1, lat:-15.7421, lng:-47.8821, distStatus:"calculada",     sincronizado:true,  pago:true,  dataPagamento:"2026-06-03" },
-  { id:2,  seq:14441, caminhaoId:1, placa:"ABC-1234", motorista:"João Silva",   freteiro:"Transportes Silva", volumeM3:12, destinoId:1, destino:"Estrada Vicinal KM 4", distanciaM:4200,  faixa:"3000 a 5000 m",   valorM3xM:8.09,  valorTotal:407.74,  data:"2026-06-03", hora:"09:15", numero:2, lat:-15.7421, lng:-47.8821, distStatus:"calculada",     sincronizado:true,  pago:true,  dataPagamento:"2026-06-03" },
-  { id:3,  seq:14442, caminhaoId:2, placa:"DEF-5678", motorista:"Carlos Souza", freteiro:"Fretes Souza",      volumeM3:10, destinoId:2, destino:"Fazenda Santa Rita",   distanciaM:8700,  faixa:"7500 a 10000 m",  valorM3xM:9.39,  valorTotal:816.93,  data:"2026-06-03", hora:"08:30", numero:1, lat:-15.7601, lng:-47.9012, distStatus:"calculada",     sincronizado:true,  pago:true,  dataPagamento:"2026-06-04" },
-  { id:4,  seq:14443, caminhaoId:3, placa:"GHI-9012", motorista:"Pedro Lima",   freteiro:"Transportes Lima",  volumeM3:14, destinoId:3, destino:"Comunidade São João",  distanciaM:15300, faixa:"15000 a 17500 m", valorM3xM:19.06, valorTotal:4082.65, data:"2026-06-04", hora:"07:55", numero:1, lat:-15.8201, lng:-47.9501, distStatus:"calculada",     sincronizado:true,  pago:true,  dataPagamento:"2026-06-05" },
-  { id:5,  seq:14444, caminhaoId:2, placa:"DEF-5678", motorista:"Carlos Souza", freteiro:"Fretes Souza",      volumeM3:10, destinoId:2, destino:"Fazenda Santa Rita",   distanciaM:8700,  faixa:"7500 a 10000 m",  valorM3xM:9.39,  valorTotal:816.93,  data:"2026-06-04", hora:"09:00", numero:1, lat:-15.7601, lng:-47.9012, distStatus:"calculada",     sincronizado:true,  pago:false, dataPagamento:null },
-  { id:6,  seq:14445, caminhaoId:2, placa:"DEF-5678", motorista:"Carlos Souza", freteiro:"Fretes Souza",      volumeM3:10, destinoId:2, destino:"Fazenda Santa Rita",   distanciaM:8700,  faixa:"7500 a 10000 m",  valorM3xM:9.39,  valorTotal:816.93,  data:"2026-06-04", hora:"10:30", numero:2, lat:-15.7601, lng:-47.9012, distStatus:"calculada",     sincronizado:true,  pago:false, dataPagamento:null },
-  { id:7,  seq:14446, caminhaoId:1, placa:"ABC-1234", motorista:"João Silva",   freteiro:"Transportes Silva", volumeM3:12, destinoId:1, destino:"Estrada Vicinal KM 4", distanciaM:4200,  faixa:"3000 a 5000 m",   valorM3xM:8.09,  valorTotal:407.74,  data:"2026-06-05", hora:"07:20", numero:1, lat:-15.7421, lng:-47.8821, distStatus:"calculada",     sincronizado:true,  pago:false, dataPagamento:null },
-  { id:8,  seq:14447, caminhaoId:3, placa:"GHI-9012", motorista:"Pedro Lima",   freteiro:"Transportes Lima",  volumeM3:14, destinoId:4, destino:"Acesso Córrego Fundo", distanciaM:20000, faixa:"17500 a 20000 m", valorM3xM:21.71, valorTotal:6077.20, data:"2026-06-05", hora:"08:05", numero:1, lat:-15.9101, lng:-48.0201, distStatus:"calculada",     sincronizado:true,  pago:false, dataPagamento:null },
-  { id:9,  seq:14448, caminhaoId:1, placa:"ABC-1234", motorista:"João Silva",   freteiro:"Transportes Silva", volumeM3:12, destinoId:1, destino:"Estrada Vicinal KM 4", distanciaM:4200,  faixa:"3000 a 5000 m",   valorM3xM:8.09,  valorTotal:407.74,  data:"2026-06-06", hora:"07:10", numero:1, lat:-15.7421, lng:-47.8821, distStatus:"gps_linha_reta", sincronizado:false, pago:false, dataPagamento:null },
-  { id:10, seq:14449, caminhaoId:2, placa:"DEF-5678", motorista:"Carlos Souza", freteiro:"Fretes Souza",      volumeM3:10, destinoId:2, destino:"Fazenda Santa Rita",   distanciaM:8700,  faixa:"7500 a 10000 m",  valorM3xM:9.39,  valorTotal:816.93,  data:"2026-06-06", hora:"08:20", numero:1, lat:-15.7601, lng:-47.9012, distStatus:"gps_linha_reta", sincronizado:false, pago:false, dataPagamento:null },
-];
+const VIAGENS_SEED = [];
 
-let _nextSeq = 14450;
+let _nextSeq = 1;
 const nextSeq = () => _nextSeq++;
 
 // ── HELPERS ──────────────────────────────────────────────────────
