@@ -4,25 +4,16 @@ import { useState, useEffect, useRef } from "react";
 const JAZIDA = { nome: "Jazida Central", lat: -15.7801, lng: -47.9292 };
 
 const USUARIOS = [
-  { id:1, nome:"Carlos Gestor",     login:"gestor",    senha:"1234", perfil:"gestor"    },
-  { id:2, nome:"Roberto Apontador", login:"apontador", senha:"1234", perfil:"apontador" },
-  { id:3, nome:"João Silva",        login:"joao",      senha:"1234", perfil:"motorista", caminhaoId:1 },
-  { id:4, nome:"Carlos Souza",      login:"carlos",    senha:"1234", perfil:"motorista", caminhaoId:2 },
-  { id:5, nome:"Pedro Lima",        login:"pedro",     senha:"1234", perfil:"motorista", caminhaoId:3 },
+  { id:1, nome:"Gestor",      login:"gestor",      senha:"1234", perfil:"gestor"    },
+  { id:2, nome:"Apontador",   login:"apontador",   senha:"1234", perfil:"apontador" },
+  { id:3, nome:"Motorista 1", login:"motorista1",  senha:"1234", perfil:"motorista", caminhaoId:1 },
+  { id:4, nome:"Motorista 2", login:"motorista2",  senha:"1234", perfil:"motorista", caminhaoId:2 },
+  { id:5, nome:"Motorista 3", login:"motorista3",  senha:"1234", perfil:"motorista", caminhaoId:3 },
 ];
 
-const CAMINHOES_INIT = [
-  { id:1, placa:"ABC-1234", motorista:"João Silva",   freteiro:"Transportes Silva", volumeM3:12, whatsapp:"5565999990001" },
-  { id:2, placa:"DEF-5678", motorista:"Carlos Souza", freteiro:"Fretes Souza",      volumeM3:10, whatsapp:"5565999990002" },
-  { id:3, placa:"GHI-9012", motorista:"Pedro Lima",   freteiro:"Transportes Lima",  volumeM3:14, whatsapp:"5565999990003" },
-];
+const CAMINHOES_INIT = [];
 
-const DESTINOS_INIT = [
-  { id:1, nome:"Estrada Vicinal KM 4",  distanciaM:4200  },
-  { id:2, nome:"Fazenda Santa Rita",    distanciaM:8700  },
-  { id:3, nome:"Comunidade São João",   distanciaM:15300 },
-  { id:4, nome:"Acesso Córrego Fundo",  distanciaM:20000 },
-];
+const DESTINOS_INIT = [];
 
 const TABELA_INIT = [
   { faixaLabel:"50 a 400 m",      mMin:50,   mMax:400,   valorM3xM:3.62  },
