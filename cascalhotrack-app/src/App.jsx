@@ -200,9 +200,9 @@ function TelaLogin({onLogin}) {
 // ── TELA APONTADOR ───────────────────────────────────────────────
 function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usuario}) {
   const [scanMode,   setScanMode]   = useState(false);
-  const [camScanned, setCamScanned] = useState(null); // caminhão identificado pelo QR
+  const [camScanned, setCamScanned] = useState(null);
   const [selDest,    setSelDest]    = useState(null);
-  const [scanInput,  setScanInput]  = useState("");   // simulação: digitar placa
+  const [scanInput,  setScanInput]  = useState("");
   const [gpsStatus,  setGpsStatus]  = useState("idle");
   const [coords,     setCoords]     = useState(null);
   const [registrando,setRegistrando]= useState(false);
@@ -215,7 +215,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
   const naoSync=viagens.filter(v=>!v.sincronizado);
   const pendentes=viagens.filter(v=>v.distStatus==="gps_linha_reta");
 
-  // Simula leitura do QR — em produção seria a câmera lendo o QR do caminhão
   const lerQR = () => {
     const placa = scanInput.trim().toUpperCase();
     const cam = caminhoes.find(c=>c.placa===placa||c.placa.replace("-","")===placa.replace("-",""));
@@ -230,7 +229,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
     if(!camScanned) { showToast("Escaneie o QR Code do caminhão!","error"); return; }
     if(!selDest)    { showToast("Selecione o destino!","error"); return; }
 
-    // Anti-duplicata 15 min
     const agora=Date.now();
     const recente=viagens.find(v=>v.caminhaoId===camScanned.id&&v.data===today()&&
       (agora-new Date(`${v.data}T${v.hora}:00`).getTime())<15*60*1000);
@@ -289,8 +287,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
 
   return (
     <div style={{padding:"14px 14px 80px"}}>
-
-      {/* Sync banner */}
       {naoSync.length>0&&(
         <div style={{background:"#1e1a0a",border:"1px solid #f0a50066",borderRadius:10,padding:"10px 14px",marginBottom:12,display:"flex",justifyContent:"space-between",alignItems:"center"}}>
           <div>
@@ -300,8 +296,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
           <Btn onClick={simularSync} color="#f0a500" style={{fontSize:11,padding:"6px 12px"}}>SYNC ☁️</Btn>
         </div>
       )}
-
-      {/* GPS status */}
       <div style={{display:"flex",alignItems:"center",gap:8,padding:"8px 12px",borderRadius:8,marginBottom:12,
         background:gpsStatus==="ok"?"#0d2e1a":gpsStatus==="erro"?"#2e0d0d":"#1a1e2a",
         border:"1px solid "+(gpsStatus==="ok"?"#2ecc7155":gpsStatus==="erro"?"#e74c3c55":"#2a2f3f")}}>
@@ -313,8 +307,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
           {coords&&<div style={{fontSize:10,color:"#7a7a8a"}}>{coords.lat}, {coords.lng}</div>}
         </div>
       </div>
-
-      {/* PASSO 1 — Escanear QR */}
       <SLabel>PASSO 1 — ESCANEAR QR CODE DO CAMINHÃO</SLabel>
       {!camScanned ? (
         <Card style={{border:"1px solid #c4600a44"}}>
@@ -371,15 +363,11 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
           </div>
         </Card>
       )}
-
-      {/* PASSO 2 — Destino */}
       <SLabel mt={16}>PASSO 2 — LOCAL DE DESCARGA</SLabel>
       <Sel value={selDest||""} onChange={e=>setSelDest(Number(e.target.value))}>
         <option value="">— Selecione o destino —</option>
         {destinos.map(d=><option key={d.id} value={d.id}>{d.nome} · {(d.distanciaM/1000).toFixed(1)}km</option>)}
       </Sel>
-
-      {/* Preview valor */}
       {camScanned&&selDest&&(()=>{
         const dest=destinos.find(d=>d.id===selDest);
         const f=getFaixa(dest.distanciaM,tabela);
@@ -394,16 +382,12 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
           </div>
         );
       })()}
-
-      {/* PASSO 3 — Registrar */}
       <SLabel mt={4}>PASSO 3 — CONFIRMAR REGISTRO</SLabel>
       <Btn full onClick={registrar} disabled={registrando||!camScanned||!selDest}
         color="linear-gradient(135deg,#c4600a,#8c3e00)"
         style={{padding:"14px",fontSize:16,marginBottom:14,opacity:(camScanned&&selDest)?1:0.4}}>
         {registrando?"⏳ REGISTRANDO...":"✅ REGISTRAR VIAGEM"}
       </Btn>
-
-      {/* Comprovante */}
       {resultado&&(
         <Card style={{background:"#0a1f12",border:"1px solid #2ecc7155",marginBottom:14}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}>
@@ -437,8 +421,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
           })()}
         </Card>
       )}
-
-      {/* Pendentes GPS */}
       {pendentes.length>0&&(
         <>
           <SLabel mt={16}>📡 CALCULAR DISTÂNCIA POR ESTRADA ({pendentes.length})</SLabel>
@@ -460,8 +442,6 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
           ))}
         </>
       )}
-
-      {/* Viagens de hoje */}
       <SLabel mt={16}>VIAGENS DE HOJE ({vHoje.length})</SLabel>
       {vHoje.length===0
         ?<div style={{textAlign:"center",color:"#555",padding:20,fontSize:13}}>Nenhuma viagem hoje</div>
@@ -487,10 +467,17 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
 }
 
 // ── TELA MOTORISTA ───────────────────────────────────────────────
-function TelaMotorista({viagens,caminhoes,usuario}) {
+function TelaMotorista({viagens,caminhoes,usuario,onSair}) {
   const [subTab,setSubTab]=useState("hoje");
   const cam=caminhoes.find(c=>c.id===usuario.caminhaoId);
-  if(!cam) return <div style={{padding:20,color:"#9090a0"}}>Caminhão não encontrado.</div>;
+  if(!cam) return (
+    <div style={{padding:32,textAlign:"center"}}>
+      <div style={{fontSize:40,marginBottom:12}}>🚛</div>
+      <div style={{fontSize:15,color:"#9090a0",marginBottom:8}}>Nenhum caminhão vinculado a este usuário.</div>
+      <div style={{fontSize:12,color:"#555",marginBottom:24}}>Aguarde o gestor cadastrar seu caminhão.</div>
+      <button onClick={onSair} style={{background:"#c4600a",border:"none",borderRadius:10,padding:"12px 28px",color:"#fff",fontSize:15,fontWeight:800,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>← VOLTAR AO LOGIN</button>
+    </div>
+  );
 
   const vHoje=viagens.filter(v=>v.caminhaoId===cam.id&&v.data===today());
   const vMes =viagens.filter(v=>v.caminhaoId===cam.id&&v.data.startsWith(new Date().toISOString().slice(0,7)));
@@ -502,8 +489,6 @@ function TelaMotorista({viagens,caminhoes,usuario}) {
         <div style={{fontSize:12,color:"#9090a0"}}>{cam.motorista} · {cam.freteiro}</div>
         <div style={{fontSize:11,color:"#c4600a"}}>Caçamba: {cam.volumeM3}m³</div>
       </Card>
-
-      {/* QR Code do caminhão */}
       <SLabel>MEU QR CODE</SLabel>
       <Card style={{textAlign:"center"}}>
         <div style={{fontSize:11,color:"#9090a0",marginBottom:10}}>Mostre este QR ao apontador para registrar a viagem</div>
@@ -511,7 +496,6 @@ function TelaMotorista({viagens,caminhoes,usuario}) {
           style={{width:160,height:160,borderRadius:8,border:"4px solid #c4600a"}}/>
         <div style={{fontWeight:800,fontSize:18,letterSpacing:3,marginTop:8,color:"#c4600a"}}>{cam.placa}</div>
       </Card>
-
       <div style={{display:"flex",gap:6,margin:"14px 0 10px"}}>
         {[{key:"hoje",label:"Hoje"},{key:"mes",label:"Este Mês"}].map(t=>(
           <button key={t.key} onClick={()=>setSubTab(t.key)} style={{
@@ -521,7 +505,6 @@ function TelaMotorista({viagens,caminhoes,usuario}) {
           }}>{t.label}</button>
         ))}
       </div>
-
       {subTab==="hoje"&&(
         <>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -551,7 +534,6 @@ function TelaMotorista({viagens,caminhoes,usuario}) {
           }
         </>
       )}
-
       {subTab==="mes"&&(()=>{
         const byDate={};
         vMes.forEach(v=>{if(!byDate[v.data])byDate[v.data]=[];byDate[v.data].push(v);});
@@ -622,10 +604,7 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
           }}>{s.label}</button>
         ))}
       </div>
-
       <div style={{padding:"14px 14px 80px"}}>
-
-        {/* DASHBOARD */}
         {subTab==="dashboard"&&(
           <div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}>
@@ -683,8 +662,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
             ))}
           </div>
         )}
-
-        {/* PAGAMENTOS */}
         {subTab==="pagamentos"&&(()=>{
           const pagas=viagens.filter(v=>v.pago);
           return (
@@ -745,8 +722,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
             </div>
           );
         })()}
-
-        {/* RELATÓRIOS */}
         {subTab==="relatorios"&&(
           <div>
             <div style={{display:"flex",gap:6,marginBottom:14}}>
@@ -799,8 +774,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
             ))}
           </div>);
         })()}
-
-        {/* QR CODES */}
         {subTab==="qrcodes"&&(
           <div>
             <div style={{fontSize:12,color:"#9090a0",marginBottom:14,background:"#1a1e2a",borderRadius:10,padding:12,border:"1px solid #2a2f3f"}}>
@@ -826,8 +799,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
             ))}
           </div>
         )}
-
-        {/* CONFIG */}
         {subTab==="config"&&(
           <div>
             <SLabel>TABELA DE PREÇOS (m³ × km × R$)</SLabel>
@@ -843,7 +814,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
                 </div>
               </Card>
             ))}
-
             <SLabel mt={16}>GOOGLE MAPS API KEY</SLabel>
             <Card style={{border:apiKey?"1px solid #2ecc7144":"1px solid #f0a50044"}}>
               <div style={{fontSize:11,color:"#9090a0",marginBottom:6}}>Para calcular distância real pela estrada quando houver internet.</div>
@@ -853,7 +823,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
                 {apiKey&&<span style={{color:"#2ecc71",fontSize:18}}>✅</span>}
               </div>
             </Card>
-
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:16}}>
               <SLabel>DESTINOS</SLabel>
               <Btn onClick={()=>setShowAddDest(!showAddDest)} style={{fontSize:11,padding:"5px 12px"}}>+ NOVO</Btn>
@@ -872,7 +841,6 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
                 <span style={{background:"#c4600a22",color:"#c4600a",border:"1px solid #c4600a55",borderRadius:5,padding:"2px 8px",fontSize:10,fontWeight:700}}>{getFaixa(d.distanciaM,tabela).faixaLabel}</span>
               </Card>
             ))}
-
             <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:16}}>
               <SLabel>CAMINHÕES</SLabel>
               <Btn onClick={()=>setShowAddCam(!showAddCam)} style={{fontSize:11,padding:"5px 12px"}}>+ NOVO</Btn>
@@ -930,7 +898,7 @@ export default function App() {
     <div style={{fontFamily:"'Barlow Condensed',sans-serif",background:"#0f1117",minHeight:"100vh",color:"#e8e0d0",maxWidth:430,margin:"0 auto"}}>
       <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
       <div style={{background:"linear-gradient(135deg,#c4600a,#8c3e00)",padding:"14px 20px 10px",position:"relative",overflow:"hidden"}}>
-        <div style={{position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"rgba(255,255,255,0.06)"}}/>
+        <div style={{position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"rgba(255,255,255,0.06)",pointerEvents:"none"}}/>
         <div style={{display:"flex",alignItems:"center",gap:10}}>
           <span style={{fontSize:22}}>⛏️</span>
           <div>
@@ -942,7 +910,7 @@ export default function App() {
               <div style={{fontSize:10,opacity:0.7}}>{usuario.nome}</div>
               <div style={{fontSize:11,fontWeight:700,color:PERFIL_COLOR[usuario.perfil]||"#fff",background:"rgba(0,0,0,0.3)",borderRadius:4,padding:"1px 6px"}}>{usuario.perfil.toUpperCase()}</div>
             </div>
-            <button onClick={()=>setUsuario(null)} style={{background:"rgba(0,0,0,0.3)",border:"none",borderRadius:6,padding:"5px 8px",color:"#fff",fontSize:11,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:700}}>SAIR</button>
+            <button onClick={()=>setUsuario(null)} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"7px 14px",color:"#fff",fontSize:13,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,letterSpacing:0.5}}>← SAIR</button>
           </div>
         </div>
       </div>
@@ -959,7 +927,7 @@ export default function App() {
           ))}
         </div>
       )}
-      {usuario.perfil==="motorista"&&<TelaMotorista viagens={viagens} caminhoes={caminhoes} usuario={usuario}/>}
+      {usuario.perfil==="motorista"&&<TelaMotorista viagens={viagens} caminhoes={caminhoes} usuario={usuario} onSair={()=>setUsuario(null)}/>}
       {(usuario.perfil==="apontador"||(usuario.perfil==="gestor"&&navTab==="apontador"))&&
         <TelaApontador viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} destinos={destinos} tabela={tabela} apiKey={apiKey} usuario={usuario}/>}
       {usuario.perfil==="gestor"&&navTab==="principal"&&
