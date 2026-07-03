@@ -12,9 +12,9 @@ const USUARIOS = [
 ];
 
 const CAMINHOES_INIT = [
-  { id:1, placa:"ABC-1234", motorista:"JoÃ£o Silva",     freteiro:"Transportes Silva",   volumeM3:12, whatsapp:"65999990001" },
-  { id:2, placa:"DEF-5678", motorista:"Carlos Pereira", freteiro:"Pereira Fretamento",  volumeM3:14, whatsapp:"65999990002" },
-  { id:3, placa:"GHI-9012", motorista:"Maria Santos",   freteiro:"Santos & Cia",        volumeM3:10, whatsapp:"65999990003" },
+  { id:1, placa:"ABC-1234", motorista:"JoÃ£o Silva",     freteiro:"Transportes Silva",   volumeM3:12, whatsapp:"65999990001", cpfCnpj:"", telefone:"" },
+  { id:2, placa:"DEF-5678", motorista:"Carlos Pereira", freteiro:"Pereira Fretamento",  volumeM3:14, whatsapp:"65999990002", cpfCnpj:"", telefone:"" },
+  { id:3, placa:"GHI-9012", motorista:"Maria Santos",   freteiro:"Santos & Cia",        volumeM3:10, whatsapp:"65999990003", cpfCnpj:"", telefone:"" },
 ];
 
 const DESTINOS_INIT = [
@@ -96,7 +96,7 @@ function gerarComprovante(v) {
   return [
     "ð *COMPROVANTE DE VIAGEM*",div,
     `ð¢ *GERA-OBRAS Â· CascalhoTrack*`,
-    `ð *NÂ¸${v.seq}*   ð $ {fmtDate(v.data)} Ã s ${v.hora}`,div,
+    `ð *NÂº ${v.seq}*   ð ${fmtDate(v.data)} Ã s ${v.hora}`,div,
     `ð *Placa:* ${v.placa}`,
     `ð¤ *Motorista:* ${v.motorista}`,
     `ð­ *Freteiro:* ${v.freteiro}`,div,
@@ -505,8 +505,16 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
 }
 
 // ââ TELA MOTORISTA âââââââââââââââââââââââââââââââââââââââââââââââ
-function TelaMotorista({viagens,caminhoes,usuario,onSair}) {
+function TelaMotorista({viagens,caminhoes,setCaminhoes,usuario,onSair}) {
   const [subTab,setSubTab]=useState("hoje");
+  const [editando,setEditando]=useState(false);
+  const [eMot,setEMot]=useState(""); const [ePlaca,setEPlaca]=useState("");
+  const [eFret,setEFret]=useState(""); const [eVol,setEVol]=useState("");
+  const [eWa,setEWa]=useState(""); const [eCpf,setECpf]=useState("");
+  const [eTel,setETel]=useState("");
+  const [toast,setToast]=useState(null);
+  const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
+
   const cam=caminhoes.find(c=>c.id===usuario.caminhaoId);
   if(!cam) return (
     <div style={{padding:32,textAlign:"center"}}>
@@ -520,33 +528,45 @@ function TelaMotorista({viagens,caminhoes,usuario,onSair}) {
   const vHoje=viagens.filter(v=>v.caminhaoId===cam.id&&v.data===today());
   const vMes =viagens.filter(v=>v.caminhaoId===cam.id&&v.data.startsWith(new Date().toISOString().slice(0,7)));
 
+  const abrirEdit=()=>{setEMot(cam.motorista);setEPlaca(cam.placa);setEFret(cam.freteiro||"");setEVol(String(cam.volumeM3));setEWa(cam.whatsapp||"");setECpf(cam.cpfCnpj||"");setETel(cam.telefone||"");setEditando(true);};
+  const salvarPerfil=()=>{
+    if(!ePlaca.trim()||!eMot.trim()){showToast("Placa e nome sÃ£o obrigatÃ³rios!","error");return;}
+    setCaminhoes(p=>p.map(c=>c.id===cam.id?{...c,placa:ePlaca.toUpperCase().trim(),motorista:eMot.trim(),freteiro:eFret.trim(),volumeM3:parseFloat(eVol)||c.volumeM3,whatsapp:eWa.replace(/\D/g,""),cpfCnpj:eCpf.trim(),telefone:eTel.replace(/\D/g,"")}:c));
+    setEditando(false);showToast("â Dados atualizados!");
+  };
+
+  const TABS=[{key:"hoje",label:"ð Hoje"},{key:"mes",label:"ð MÃªs"},{key:"qrcode",label:"ð² QR Code"},{key:"perfil",label:"ð¤ Meu Perfil"}];
+
   return (
     <div style={{padding:"14px 14px 80px"}}>
+      {toast&&<div style={{position:"fixed",top:16,left:"50%",transform:"translateX(-50%)",zIndex:999,background:toast.type==="error"?"#c0392b":"#27ae60",color:"#fff",padding:"10px 22px",borderRadius:10,fontWeight:700,fontSize:14,boxShadow:"0 4px 16px #0008"}}>{toast.msg}</div>}
+
+      {/* Card resumo */}
       <Card style={{borderLeft:"3px solid #c4600a",marginBottom:14}}>
-        <div style={{fontWeight:800,fontSize:16}}>{cam.placa}</div>
-        <div style={{fontSize:12,color:"#9090a0"}}>{cam.motorista} Â· {cam.freteiro}</div>
-        <div style={{fontSize:11,color:"#c4600a"}}>CaÃ§amba: {cam.volumeM3}mÂ³</div>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div>
+            <div style={{fontWeight:800,fontSize:16}}>{cam.placa}</div>
+            <div style={{fontSize:12,color:"#9090a0"}}>{cam.motorista} Â· {cam.freteiro}</div>
+            <div style={{fontSize:11,color:"#c4600a"}}>CaÃ§amba: {cam.volumeM3}mÂ³</div>
+            {cam.cpfCnpj&&<div style={{fontSize:11,color:"#9090a0",marginTop:2}}>CPF/CNPJ: {cam.cpfCnpj}</div>}
+            {cam.telefone&&<div style={{fontSize:11,color:"#9090a0"}}>Tel: {cam.telefone}</div>}
+          </div>
+          <button onClick={()=>setSubTab("perfil")} style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:8,padding:"6px 12px",color:"#c4600a",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>âï¸ EDITAR</button>
+        </div>
       </Card>
 
-      {/* QR Code do caminhÃ£o */}
-      <SLabel>MEU QR CODE</SLabel>
-      <Card style={{textAlign:"center"}}>
-        <div style={{fontSize:11,color:"#9090a0",marginBottom:10}}>Mostre este QR ao apontador para registrar a viagem</div>
-        <img src={qrUrl(`CASCALHOTRACK:${cam.placa}:${cam.id}`)} alt={`QR ${cam.placa}`}
-          style={{width:160,height:160,borderRadius:8,border:"4px solid #c4600a"}}/>
-        <div style={{fontWeight:800,fontSize:18,letterSpacing:3,marginTop:8,color:"#c4600a"}}>{cam.placa}</div>
-      </Card>
-
-      <div style={{display:"flex",gap:6,margin:"14px 0 10px"}}>
-        {[{key:"hoje",label:"Hoje"},{key:"mes",label:"Este MÃªs"}].map(t=>(
+      {/* Tabs */}
+      <div style={{display:"flex",gap:4,marginBottom:12,overflowX:"auto"}}>
+        {TABS.map(t=>(
           <button key={t.key} onClick={()=>setSubTab(t.key)} style={{
-            flex:1,padding:"8px",background:subTab===t.key?"#c4600a":"#1a1e2a",
-            border:"1px solid "+(subTab===t.key?"#c4600a":"#2a2f3f"),
-            borderRadius:8,color:"#e8e0d0",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"
+            flex:1,padding:"8px 4px",background:subTab===t.key?"#c4600a":"#1a1e2a",
+            border:"1px solid "+(subTab===t.key?"#c4600a":"#2a2f3f"),whiteSpace:"nowrap",
+            borderRadius:8,color:"#e8e0d0",fontSize:12,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"
           }}>{t.label}</button>
         ))}
       </div>
 
+      {/* HOJE */}
       {subTab==="hoje"&&(
         <>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:8,marginBottom:14}}>
@@ -577,6 +597,7 @@ function TelaMotorista({viagens,caminhoes,usuario,onSair}) {
         </>
       )}
 
+      {/* MÃS */}
       {subTab==="mes"&&(()=>{
         const byDate={};
         vMes.forEach(v=>{if(!byDate[v.data])byDate[v.data]=[];byDate[v.data].push(v);});
@@ -600,6 +621,77 @@ function TelaMotorista({viagens,caminhoes,usuario,onSair}) {
           </>
         );
       })()}
+
+      {/* QR CODE */}
+      {subTab==="qrcode"&&(
+        <div>
+          <Card style={{textAlign:"center"}}>
+            <div style={{fontSize:12,color:"#9090a0",marginBottom:10}}>Mostre este QR ao apontador para registrar a viagem instantaneamente</div>
+            <img src={qrUrl(`CASCALHOTRACK:${cam.placa}:${cam.id}`)} alt={`QR ${cam.placa}`}
+              style={{width:200,height:200,borderRadius:8,border:"4px solid #c4600a"}}/>
+            <div style={{fontWeight:800,fontSize:22,letterSpacing:4,marginTop:10,color:"#c4600a"}}>{cam.placa}</div>
+            <div style={{fontSize:12,color:"#9090a0",marginTop:4}}>{cam.motorista}</div>
+            <button onClick={()=>window.open(qrUrl(`CASCALHOTRACK:${cam.placa}:${cam.id}`),"_blank")}
+              style={{width:"100%",marginTop:14,padding:"10px",background:"#1e2230",border:"1px solid #c4600a44",borderRadius:8,color:"#c4600a",fontSize:13,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>
+              ð¨ï¸ ABRIR PARA IMPRIMIR
+            </button>
+          </Card>
+        </div>
+      )}
+
+      {/* MEU PERFIL */}
+      {subTab==="perfil"&&(
+        <div>
+          <SLabel>MEUS DADOS</SLabel>
+          {!editando?(
+            <div>
+              <Card>
+                <div style={{display:"grid",gap:10}}>
+                  {[
+                    {label:"PLACA",       val:cam.placa},
+                    {label:"NOME",        val:cam.motorista},
+                    {label:"EMPRESA/FRETEIRO", val:cam.freteiro||"â"},
+                    {label:"CAÃAMBA",     val:cam.volumeM3+"mÂ³"},
+                    {label:"WHATSAPP",    val:cam.whatsapp||"â"},
+                    {label:"TELEFONE",    val:cam.telefone||"â"},
+                    {label:"CPF / CNPJ",  val:cam.cpfCnpj||"â"},
+                  ].map(({label,val})=>(
+                    <div key={label} style={{borderBottom:"1px solid #1e2230",paddingBottom:8}}>
+                      <div style={{fontSize:10,color:"#7a7a8a",fontWeight:700,marginBottom:2}}>{label}</div>
+                      <div style={{fontSize:14,fontWeight:600,color:val==="â"?"#555":"#e8e0d0"}}>{val}</div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <Btn full onClick={abrirEdit} style={{marginTop:12}}>âï¸ EDITAR MEUS DADOS</Btn>
+            </div>
+          ):(
+            <Card style={{border:"1px solid #c4600a44"}}>
+              <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:12}}>âï¸ EDITANDO MEUS DADOS</div>
+              <Inp label="PLACA DO CAMINHÃO" value={ePlaca} onChange={e=>setEPlaca(e.target.value)} placeholder="Ex: ABC-1234"/>
+              <Inp label="SEU NOME" value={eMot} onChange={e=>setEMot(e.target.value)} placeholder="Nome completo"/>
+              <Inp label="EMPRESA / FRETEIRO" value={eFret} onChange={e=>setEFret(e.target.value)} placeholder="Nome da empresa"/>
+              <Inp label="VOLUME DA CAÃAMBA (mÂ³)" type="number" value={eVol} onChange={e=>setEVol(e.target.value)} placeholder="Ex: 12"/>
+              <Inp label="WHATSAPP (com DDD)" value={eWa} onChange={e=>setEWa(e.target.value)} placeholder="Ex: 65999990001"/>
+              <Inp label="TELEFONE (com DDD)" value={eTel} onChange={e=>setETel(e.target.value)} placeholder="Ex: 65999990001"/>
+              <Inp label="CPF ou CNPJ" value={eCpf} onChange={e=>setECpf(e.target.value)} placeholder="Somente nÃºmeros"/>
+              <div style={{display:"flex",gap:8,marginTop:4}}>
+                <Btn full onClick={salvarPerfil} color="#2ecc71">SALVAR â</Btn>
+                <Btn onClick={()=>setEditando(false)} color="#555" style={{padding:"9px 16px"}}>CANCELAR</Btn>
+              </div>
+            </Card>
+          )}
+
+          <div style={{marginTop:20}}>
+            <SLabel>MEU QR CODE</SLabel>
+            <Card style={{textAlign:"center"}}>
+              <img src={qrUrl(`CASCALHOTRACK:${cam.placa}:${cam.id}`)} alt={`QR ${cam.placa}`}
+                style={{width:140,height:140,borderRadius:8,border:"3px solid #c4600a"}}/>
+              <div style={{fontWeight:800,fontSize:16,color:"#c4600a",marginTop:6,letterSpacing:3}}>{cam.placa}</div>
+            </Card>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -657,7 +749,7 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
           <button key={s.key} onClick={()=>setSubTab(s.key)} style={{
             flex:"0 0 auto",padding:"8px 10px",background:"none",border:"none",
             color:subTab===s.key?"#c4600a":"#7a7a8a",fontSize:10,fontWeight:700,
-            cursor:"pointer",borderBottom:subTab===s.key?"2px solid #c4600a":"2px solid transparent",
+            cursor:"pointer",borderBotton:subTab===s.key?"2px solid #c4600a":"2px solid transparent",
             fontFamily:"'Barlow Condensed',sans-serif",whiteSpace:"nowrap"
           }}>{s.label}</button>
         ))}
@@ -820,7 +912,7 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
               ))}
             </div>
             <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:8,marginBottom:12}}><Stat label="VIAGENS" value={lista.length}/><Stat label="VOLUME" value={`${tVol}mÂ³`} small/><Stat label="TOTAL" value={fmt(tVal)} accent="#2ecc71" small/></div>
-            <SLabel>POR FRETEIRO</SLabel>
+            <SLabel>POR FRYTEIRO</SLabel>
             {grpCam(lista).map((g,i)=>(
               <Card key={i} style={{borderLeft:"3px solid #c4600a"}}><div style={{display:"flex",justifyContent:"space-between"}}><div><div style={{fontWeight:700}}>{g.placa}</div><div style={{fontSize:12,color:"#9090a0"}}>{g.freteiro} Â· {g.n} viagens Â· {g.vol}mÂ³</div></div><div style={{color:"#2ecc71",fontWeight:800,fontSize:15}}>{fmt(g.val)}</div></div></Card>
             ))}
@@ -926,4 +1018,126 @@ function TelaGestor({viagens,setViagens,caminhoes,setCaminhoes,destinos,setDesti
                       <span style={{background:"#c4600a22",color:"#c4600a",border:"1px solid #c4600a55",borderRadius:5,padding:"2px 8px",fontSize:10,fontWeight:700}}>{getFaixa(d.distanciaM,tabela).faixaLabel}</span>
                     </div>
                     <div style={{display:"flex",gap:6}}>
-                      <button onClick={()=>abrirEditDest(d)} style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:6,padding:"5px 10px",color:"#c4600a",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Ba
+                      <button onClick={()=>abrirEditDest(d)} style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:6,padding:"5px 10px",color:"#c4600a",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>âï¸</button>
+                      <button onClick={()=>excluirDest(d.id)} style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:6,padding:"5px 10px",color:"#e74c3c",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>ðï¸</button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8,marginTop:16}}>
+              <SLabel>CAMINHÃES</SLabel>
+              <Btn onClick={()=>setShowAddCam(!showAddCam)} style={{fontSize:11,padding:"5px 12px"}}>+ NOVO</Btn>
+            </div>
+            {showAddCam&&(
+              <Card style={{border:"1px solid #c4600a44",marginBottom:10}}>
+                <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:8}}>NOVO CAMINHÃO</div>
+                <Inp label="PLACA"               value={nPlaca} onChange={e=>setNPlaca(e.target.value)}  placeholder="ABC-1234"/>
+                <Inp label="MOTORISTA"           value={nMot}   onChange={e=>setNMot(e.target.value)}    placeholder="Nome do motorista"/>
+                <Inp label="FRETEIRO / EMPRESA"  value={nFret}  onChange={e=>setNFret(e.target.value)}   placeholder="Nome da empresa"/>
+                <Inp label="VOLUME CAÃAMBA (mÂ³)" type="number" value={nVol} onChange={e=>setNVol(e.target.value)} placeholder="Ex: 12"/>
+                <Inp label="WHATSAPP (com DDD)"  type="tel"    value={nWa}  onChange={e=>setNWa(e.target.value)}  placeholder="65999990001"/>
+                <Btn full onClick={addCam}>SALVAR</Btn>
+              </Card>
+            )}
+            {caminhoes.map(c=>(
+              <Card key={c.id}>
+                {editCamId===c.id?(
+                  <div>
+                    <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:8}}>âï¸ EDITAR CAMINHÃO</div>
+                    <Inp label="PLACA"               value={editCamPlaca} onChange={e=>setEditCamPlaca(e.target.value)}/>
+                    <Inp label="MOTORISTA"           value={editCamMot}   onChange={e=>setEditCamMot(e.target.value)}/>
+                    <Inp label="FRETEIRO / EMPRESA"  value={editCamFret}  onChange={e=>setEditCamFret(e.target.value)}/>
+                    <Inp label="VOLUME CAÃAMBA (mÂ³)" type="number" value={editCamVol} onChange={e=>setEditCamVol(e.target.value)}/>
+                    <Inp label="WHATSAPP (com DDD)"  type="tel"    value={editCamWa}  onChange={e=>setEditCamWa(e.target.value)}/>
+                    <div style={{display:"flex",gap:8}}>
+                      <Btn full onClick={salvarCam} color="#2ecc71">SALVAR â</Btn>
+                      <Btn onClick={()=>setEditCamId(null)} color="#555" style={{padding:"9px 16px"}}>CANCELAR</Btn>
+                    </div>
+                  </div>
+                ):(
+                  <div style={{display:"flex",alignItems:"center",gap:10}}>
+                    <img src={qrUrl(`CASCALHOTRACK:${c.placa}:${c.id}`)} alt={c.placa} style={{width:48,height:48,borderRadius:6,border:"2px solid #c4600a44",flexShrink:0}}/>
+                    <div style={{flex:1}}>
+                      <div style={{fontWeight:700}}>{c.placa}</div>
+                      <div style={{fontSize:12,color:"#9090a0"}}>{c.motorista} Â· {c.freteiro}</div>
+                      <div style={{fontSize:11,color:"#c4600a"}}>{c.volumeM3}mÂ³ {c.whatsapp&&"Â· ð± "+c.whatsapp}</div>
+                    </div>
+                    <div style={{display:"flex",gap:6,flexShrink:0}}>
+                      <button onClick={()=>abrirEditCam(c)} style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:6,padding:"5px 10px",color:"#c4600a",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>âï¸</button>
+                      <button onClick={()=>excluirCam(c.id)} style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:6,padding:"5px 10px",color:"#e74c3c",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>ðï¸</button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
+      </div>
+      {toast&&<div style={{position:"fixed",bottom:20,left:"50%",transform:"translateX(-50%)",background:toast.type==="error"?"#c0392b":"#27ae60",color:"#fff",padding:"10px 20px",borderRadius:10,fontSize:13,fontWeight:700,boxShadow:"0 4px 20px rgba(0,0,0,0.4)",zIndex:999,whiteSpace:"nowrap",fontFamily:"'Barlow Condensed',sans-serif"}}>{toast.msg}</div>}
+    </div>
+  );
+}
+
+// ââ APP ROOT âââââââââââââââââââââââââââââââââââââââââââââââââââââ
+export default function App() {
+  const [usuario,   setUsuario]   = useState(null);
+  const [viagens,   setViagens]   = useState(VIAGENS_SEED);
+  const [caminhoes, setCaminhoes] = useState(CAMINHOES_INIT);
+  const [destinos,  setDestinos]  = useState(DESTINOS_INIT);
+  const [tabela,    setTabela]    = useState(TABELA_INIT);
+  const [apiKey,    setApiKey]    = useState("");
+  const [navTab,    setNavTab]    = useState("principal");
+
+  if(!usuario) return <TelaLogin onLogin={u=>{setUsuario(u);setNavTab("principal");}}/>;
+
+  const PERFIL_TABS={
+    apontador:[{key:"principal",icon:"ð",label:"Apontador"}],
+    motorista: [{key:"principal",icon:"ð",label:"Minhas Viagens"}],
+    gestor:    [{key:"principal",icon:"ð",label:"Gestor"},{key:"apontador",icon:"ð",label:"Apontador"}],
+  };
+  const tabs=PERFIL_TABS[usuario.perfil]||[];
+  const PERFIL_COLOR={gestor:"#5b9cf6",apontador:"#c4600a",motorista:"#2ecc71"};
+
+  return (
+    <div style={{fontFamily:"'Barlow Condensed',sans-serif",background:"#0f1117",minHeight:"100vh",color:"#e8e0d0",maxWidth:430,margin:"0 auto"}}>
+      <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+      <div style={{background:"linear-gradient(135deg,#c4600a,#8c3e00)",padding:"14px 20px 10px",position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",top:-20,right:-20,width:100,height:100,borderRadius:"50%",background:"rgba(255,255,255,0.06)",pointerEvents:"none"}}/>
+        <div style={{display:"flex",alignItems:"center",gap:10}}>
+          <span style={{fontSize:22}}>âï¸</span>
+          <div>
+            <div style={{fontSize:18,fontWeight:800,letterSpacing:1,lineHeight:1}}>CASCALHO<span style={{color:"#ffe0b0"}}>TRACK</span></div>
+            <div style={{fontSize:9,opacity:0.8,letterSpacing:2}}>CONTROLE DE TRANSPORTE Â· QR CODE</div>
+          </div>
+          <div style={{marginLeft:"auto",display:"flex",alignItems:"center",gap:10}}>
+            <div style={{textAlign:"right"}}>
+              <div style={{fontSize:10,opacity:0.7}}>{usuario.nome}</div>
+              <div style={{fontSize:11,fontWeight:700,color:PERFIL_COLOR[usuario.perfil]||"#fff",background:"rgba(0,0,0,0.3)",borderRadius:4,padding:"1px 6px"}}>{usuario.perfil.toUpperCase()}</div>
+            </div>
+            <button onClick={()=>setUsuario(null)} style={{background:"rgba(255,255,255,0.15)",border:"1px solid rgba(255,255,255,0.3)",borderRadius:8,padding:"7px 14px",color:"#fff",fontSize:13,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif",fontWeight:800,letterSpacing:0.5}}>â SAIR</button>
+          </div>
+        </div>
+      </div>
+      {tabs.length>1&&(
+        <div style={{display:"flex",background:"#181c26",borderBottom:"2px solid #c4600a22"}}>
+          {tabs.map(t=>(
+            <button key={t.key} onClick={()=>setNavTab(t.key)} style={{
+              flex:1,padding:"9px 2px",background:"none",border:"none",
+              color:navTab===t.key?"#c4600a":"#7a7a8a",fontSize:10,fontWeight:700,
+              letterSpacing:0.5,cursor:"pointer",
+              borderBottom:navTab===t.key?"2px solid #c4600a":"2px solid transparent",
+              fontFamily:"'Barlow Condensed',sans-serif"
+            }}>{t.icon} {t.label}</button>
+          ))}
+        </div>
+      )}
+      {usuario.perfil==="motorista"&&<TelaMotorista viagens={viagens} caminhoes={caminhoes} setCaminhoes={setCaminhoes} usuario={usuario} onSair={()=>setUsuario(null)}/>}
+      {(usuario.perfil==="apontador"||(usuario.perfil==="gestor"&&navTab==="apontador"))&&
+        <TelaApontador viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} destinos={destinos} tabela={tabela} apiKey={apiKey} usuario={usuario}/>}
+      {usuario.perfil==="gestor"&&navTab==="principal"&&
+        <TelaGestor viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} setCaminhoes={setCaminhoes} destinos={destinos} setDestinos={setDestinos} tabela={tabela} setTabela={setTabela} apiKey={apiKey} setApiKey={setApiKey}/>}
+    </div>
+  );
+}
