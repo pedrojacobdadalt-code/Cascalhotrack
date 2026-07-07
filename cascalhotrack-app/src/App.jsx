@@ -216,7 +216,7 @@ function TelaLogin({onLogin}) {
 }
 
 // ── TELA APONTADOR ───────────────────────────────────────────────
-function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usuario}) {
+function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,tabela,apiKey,usuario}) {
   const [scanMode,   setScanMode]   = useState(false);
   const [camScanned, setCamScanned] = useState(null); // caminhão identificado pelo QR
   const [selDest,    setSelDest]    = useState(null);
@@ -227,8 +227,12 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
   const [resultado,  setResultado]  = useState(null);
   const [calcStatus, setCalcStatus] = useState({});
   const [toast,      setToast]      = useState(null);
+  const [showNovoDest,setShowNovoDest]=useState(false);
+  const [novoDNome,  setNovoDNome]  = useState("");
+  const [novoDKm,    setNovoDKm]    = useState("");
 
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3500);};
+  const addDestino=()=>{if(!novoDNome||!novoDKm){showToast("Preencha nome e dist\u00e2ncia!","error");return;}const id=Date.now();const m=parseInt(novoDKm)||0;setDestinos(p=>[...p,{id,nome:novoDNome,distanciaM:m}]);setSelDest(id);setNovoDNome("");setNovoDKm("");setShowNovoDest(false);showToast("Destino adicionado!");};
   const vHoje=viagens.filter(v=>v.data===today());
   const naoSync=viagens.filter(v=>!v.sincronizado);
   const pendentes=viagens.filter(v=>v.distStatus==="gps_linha_reta");
@@ -391,7 +395,21 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,tabela,apiKey,usua
       )}
 
       {/* PASSO 2 — Destino */}
-      <SLabel mt={16}>PASSO 2 — LOCAL DE DESCARGA</SLabel>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginTop:16,marginBottom:4}}>
+        <SLabel mt={0}>PASSO 2 — LOCAL DE DESCARGA</SLabel>
+        <button onClick={()=>setShowNovoDest(p=>!p)} style={{background:"#1e2230",border:"1px solid #c4600a66",borderRadius:6,padding:"4px 10px",color:"#c4600a",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>+ NOVO DESTINO</button>
+      </div>
+      {showNovoDest&&(
+        <Card style={{border:"1px solid #c4600a44",marginBottom:10}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:10}}>➕ CADASTRAR NOVO DESTINO</div>
+          <Inp label="NOME DO DESTINO" value={novoDNome} onChange={e=>setNovoDNome(e.target.value)} placeholder="Ex: Fazenda Boa Vista"/>
+          <Inp label="DIST\u00c2NCIA EM METROS" type="number" value={novoDKm} onChange={e=>setNovoDKm(e.target.value)} placeholder="Ex: 2500"/>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <Btn full onClick={addDestino} color="#2ecc71">SALVAR ✅</Btn>
+            <Btn onClick={()=>{setShowNovoDest(false);setNovoDNome("");setNovoDKm("");}} color="#555" style={{padding:"9px 16px"}}>CANCELAR</Btn>
+          </div>
+        </Card>
+      )}
       <Sel value={selDest||""} onChange={e=>setSelDest(Number(e.target.value))}>
         <option value="">— Selecione o destino —</option>
         {destinos.map(d=><option key={d.id} value={d.id}>{d.nome} · {(d.distanciaM/1000).toFixed(1)}km</option>)}
@@ -1141,7 +1159,7 @@ export default function App() {
       )}
       {usuario.perfil==="motorista"&&<TelaMotorista viagens={viagens} caminhoes={caminhoes} setCaminhoes={setCaminhoes} usuario={usuario} onSair={()=>setUsuario(null)}/>}
       {(usuario.perfil==="apontador"||(usuario.perfil==="gestor"&&navTab==="apontador"))&&
-        <TelaApontador viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} destinos={destinos} tabela={tabela} apiKey={apiKey} usuario={usuario}/>}
+        <TelaApontador viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} destinos={destinos} setDestinos={setDestinos} tabela={tabela} apiKey={apiKey} usuario={usuario}/>}
       {usuario.perfil==="gestor"&&navTab==="principal"&&
         <TelaGestor viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} setCaminhoes={setCaminhoes} destinos={destinos} setDestinos={setDestinos} tabela={tabela} setTabela={setTabela} apiKey={apiKey} setApiKey={setApiKey}/>}
     </div>
