@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 
 // ── CONSTANTES ───────────────────────────────────────────────────
-const JAZIDA = { nome: "Jazida Central", lat: -15.7801, lng: -47.9292 };
+const JAZIDA_INIT = { nome: "Jazida Central", lat: -15.7801, lng: -47.9292 };
 
 const USUARIOS = [
   { id:1, nome:"Gestor",         login:"gestor",      senha:"1234", perfil:"gestor"    },
@@ -83,8 +83,9 @@ function obterGPS() {
     );
   });
 }
-async function calcularDistanciaEstrada(lat,lng,apiKey) {
-  const url=`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${JAZIDA.lat},${JAZIDA.lng}&destinations=${lat},${lng}&key=${apiKey}&mode=driving`;
+async function calcularDistanciaEstrada(lat,lng,apiKey,jazida) {
+  const jaz=jazida||JAZIDA_INIT;
+  const url=`https://maps.googleapis.com/maps/api/distancematrix/json?origins=${jaz.lat},${jaz.lng}&destinations=${lat},${lng}&key=${apiKey}&mode=driving`;
   const data=await(await fetch(url)).json();
   const metros=data.rows?.[0]?.elements?.[0]?.distance?.value;
   if(!metros) throw new Error("Sem resposta");
@@ -216,7 +217,7 @@ function TelaLogin({onLogin}) {
 }
 
 // ── TELA APONTADOR ───────────────────────────────────────────────
-function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,tabela,apiKey,usuario}) {
+function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,jazida,setJazida,tabela,apiKey,usuario}) {
   const [scanMode,   setScanMode]   = useState(false);
   const [camScanned, setCamScanned] = useState(null); // caminhão identificado pelo QR
   const [selDest,    setSelDest]    = useState(null);
@@ -228,11 +229,35 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,tabela
   const [calcStatus, setCalcStatus] = useState({});
   const [toast,      setToast]      = useState(null);
   const [showNovoDest,setShowNovoDest]=useState(false);
+  const [showJazidaConfig,setShowJazidaConfig]=useState(false);
+  const [showMapPicker,   setShowMapPicker]   =useState(false);
+  const [jNome, setJNome] = useState(jazida.nome);
+  const [jLat,  setJLat]  = useState(String(jazida.lat));
+  const [jLng,  setJLng]  = useState(String(jazida.lng));
+  const [jGps,  setJGps]  = useState("idle");
+  const mapPickerRef = useRef(null);
   const [novoDNome,  setNovoDNome]  = useState("");
   const [novoDKm,    setNovoDKm]    = useState("");
 
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3500);};
   const addDestino=()=>{if(!novoDNome||!novoDKm){showToast("Preencha nome e dist\u00e2ncia!","error");return;}const id=Date.now();const m=parseInt(novoDKm)||0;setDestinos(p=>[...p,{id,nome:novoDNome,distanciaM:m}]);setSelDest(id);setNovoDNome("");setNovoDKm("");setShowNovoDest(false);showToast("Destino adicionado!");};
+  const capturarGPSJazida=async()=>{setJGps("buscando");try{const c=await obterGPS();setJLat(String(c.lat));setJLng(String(c.lng));setJGps("ok");showToast("📍 Localização capturada!");}catch{setJGps("erro");showToast("GPS indisponível","error");}};
+  const salvarJazida=()=>{const lt=parseFloat(jLat),ln=parseFloat(jLng);if(!jNome||isNaN(lt)||isNaN(ln)){showToast("Preencha todos os campos!","error");return;}setJazida({nome:jNome,lat:lt,lng:ln});setShowJazidaConfig(false);setShowMapPicker(false);showToast("✅ Jazida configurada!");};
+  useEffect(()=>{
+    if(!showMapPicker||!mapPickerRef.current)return;
+    const initMap=async()=>{
+      if(!window.google?.maps){await new Promise(res=>{if(document.getElementById("gmaps-script")){res();return;}const s=document.createElement("script");s.id="gmaps-script";s.src=`https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;s.onload=res;document.head.appendChild(s);});}
+      const lt=parseFloat(jLat)||jazida.lat,ln=parseFloat(jLng)||jazida.lng;
+      const map=new window.google.maps.Map(mapPickerRef.current,{center:{lat:lt,lng:ln},zoom:15,mapTypeId:"hybrid"});
+      const marker=new window.google.maps.Marker({position:{lat:lt,lng:ln},map,draggable:true,title:"Jazida"});
+      const upd=(latLng)=>{const a=+latLng.lat().toFixed(6),b=+latLng.lng().toFixed(6);marker.setPosition({lat:a,lng:b});setJLat(String(a));setJLng(String(b));};
+      map.addListener("click",e=>upd(e.latLng));
+      marker.addListener("dragend",e=>upd(e.latLng));
+      const inp=document.getElementById("jazida-search");
+      if(inp&&window.google.maps.places){const sb=new window.google.maps.places.SearchBox(inp);map.addListener("bounds_changed",()=>sb.setBounds(map.getBounds()));sb.addListener("places_changed",()=>{const pl=sb.getPlaces();if(!pl?.length)return;const p=pl[0];const a=+p.geometry.location.lat().toFixed(6),b=+p.geometry.location.lng().toFixed(6);map.setCenter({lat:a,lng:b});map.setZoom(16);marker.setPosition({lat:a,lng:b});setJLat(String(a));setJLng(String(b));});}
+    };
+    initMap();
+  },[showMapPicker]);
   const vHoje=viagens.filter(v=>v.data===today());
   const naoSync=viagens.filter(v=>!v.sincronizado);
   const pendentes=viagens.filter(v=>v.distStatus==="gps_linha_reta");
@@ -265,7 +290,7 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,tabela
 
     setTimeout(()=>{
       const dest=destinos.find(d=>d.id===selDest);
-      const mBase=gps?haversineM(JAZIDA.lat,JAZIDA.lng,gps.lat,gps.lng):(dest.distanciaM||10000);
+      const mBase=gps?haversineM(jazida.lat,jazida.lng,gps.lat,gps.lng):(dest.distanciaM||10000);
       const f=getFaixa(mBase,tabela);
       const val=calcularValor(camScanned.volumeM3,mBase,tabela);
       const num=viagens.filter(v=>v.caminhaoId===camScanned.id&&v.data===today()).length+1;
@@ -292,7 +317,7 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,tabela
     if(!v.lat){showToast("Esta viagem não tem GPS.","error");return;}
     setCalcStatus(p=>({...p,[v.id]:"calculando"}));
     try{
-      const metros=await calcularDistanciaEstrada(v.lat,v.lng,apiKey);
+      const metros=await calcularDistanciaEstrada(v.lat,v.lng,apiKey,jazida);
       const f=getFaixa(metros,tabela);
       const novoVal=calcularValor(v.volumeM3,metros,tabela);
       setViagens(p=>p.map(x=>x.id===v.id?{...x,distanciaM:metros,faixa:f.faixaLabel,valorM3xM:f.valorM3xM,valorTotal:novoVal,distStatus:"calculada",sincronizado:false}:x));
@@ -336,7 +361,59 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,tabela
         </div>
       </div>
 
-      {/* PASSO 1 — Escanear QR */}
+      {/* JAZIDA — ponto de origem */}
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
+        <div>
+          <div style={{fontSize:10,fontWeight:700,color:"#7a7a8a",letterSpacing:1,marginBottom:2}}>📍 JAZIDA / ORIGEM</div>
+          <div style={{fontSize:13,fontWeight:700,color:"#c4600a"}}>{jazida.nome}</div>
+          <div style={{fontSize:10,color:"#7a7a8a"}}>{jazida.lat.toFixed(5)}, {jazida.lng.toFixed(5)}</div>
+        </div>
+        <div style={{display:"flex",gap:6}}>
+          <a href={`https://maps.google.com/?q=${jazida.lat},${jazida.lng}`} target="_blank" rel="noreferrer"
+            style={{background:"#1e2230",border:"1px solid #2a2f3f",borderRadius:6,padding:"4px 10px",color:"#9090a0",fontSize:11,fontWeight:700,textDecoration:"none",fontFamily:"'Barlow Condensed',sans-serif"}}>🗺️ VER</a>
+          <button onClick={()=>{setJNome(jazida.nome);setJLat(String(jazida.lat));setJLng(String(jazida.lng));setJGps("idle");setShowJazidaConfig(p=>!p);}}
+            style={{background:"#1e2230",border:"1px solid #c4600a66",borderRadius:6,padding:"4px 10px",color:"#c4600a",fontSize:11,fontWeight:700,cursor:"pointer",fontFamily:"'Barlow Condensed',sans-serif"}}>⚙️ EDITAR</button>
+        </div>
+      </div>
+      {showJazidaConfig&&(
+        <Card style={{border:"1px solid #c4600a66",marginBottom:14}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:10}}>⚙️ CONFIGURAR JAZIDA</div>
+          <Inp label="NOME DA JAZIDA" value={jNome} onChange={e=>setJNome(e.target.value)} placeholder="Ex: Jazida Central"/>
+          <div style={{display:"flex",gap:8,marginBottom:10}}>
+            <Btn full onClick={capturarGPSJazida} color={jGps==="ok"?"#2ecc71":"#2a3a5a"} style={{fontSize:12}}>
+              {jGps==="buscando"?"🔄 BUSCANDO...":jGps==="ok"?"✅ GPS CAPTURADO":"📍 CAPTURAR GPS ATUAL"}
+            </Btn>
+            {apiKey&&<Btn full onClick={()=>setShowMapPicker(true)} color="#1a3a5a" style={{fontSize:12}}>🗺️ GOOGLE MAPS</Btn>}
+          </div>
+          <Inp label="LATITUDE" type="number" value={jLat} onChange={e=>setJLat(e.target.value)} placeholder="-15.780100"/>
+          <Inp label="LONGITUDE" type="number" value={jLng} onChange={e=>setJLng(e.target.value)} placeholder="-47.929200"/>
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <Btn full onClick={salvarJazida} color="#2ecc71">SALVAR ✅</Btn>
+            <Btn onClick={()=>{setShowJazidaConfig(false);setShowMapPicker(false);}} color="#555" style={{padding:"9px 16px"}}>CANCELAR</Btn>
+          </div>
+        </Card>
+      )}
+      {showMapPicker&&(
+        <div style={{position:"fixed",top:0,left:0,right:0,bottom:0,zIndex:2000,display:"flex",flexDirection:"column",background:"#0a0d14"}}>
+          <div style={{background:"#1a1e2a",padding:"10px 14px",display:"flex",justifyContent:"space-between",alignItems:"center",borderBottom:"1px solid #2a2f3f"}}>
+            <div style={{fontSize:13,fontWeight:700,color:"#c4600a"}}>📍 MARCAR JAZIDA NO MAPA</div>
+            <button onClick={()=>setShowMapPicker(false)} style={{background:"none",border:"none",color:"#9090a0",fontSize:18,cursor:"pointer"}}>✕</button>
+          </div>
+          {apiKey&&<input id="jazida-search" type="text" placeholder="🔍 Buscar endereço ou localidade..."
+            style={{width:"100%",background:"#1e2230",border:"none",borderBottom:"1px solid #2a2f3f",padding:"10px 14px",color:"#e8e0d0",fontSize:14,outline:"none",boxSizing:"border-box",fontFamily:"'Barlow Condensed',sans-serif"}}/>}
+          <div ref={mapPickerRef} style={{flex:1}}/>
+          <div style={{background:"#1a1e2a",padding:"10px 14px",borderTop:"1px solid #2a2f3f"}}>
+            <div style={{fontSize:10,color:"#7a7a8a",marginBottom:6}}>Toque no mapa ou arraste o marcador para posicionar a jazida</div>
+            <div style={{fontSize:12,color:"#c4600a",fontWeight:700,marginBottom:8}}>{jLat&&jLng?`📍 ${jLat}, ${jLng}`:"Nenhum ponto selecionado"}</div>
+            <div style={{display:"flex",gap:8}}>
+              <Btn full onClick={()=>setShowMapPicker(false)} color="#2ecc71">✅ CONFIRMAR PONTO</Btn>
+              <Btn onClick={()=>setShowMapPicker(false)} color="#555" style={{padding:"9px 16px"}}>VOLTAR</Btn>
+            </div>
+          </div>
+        </div>
+      )}
+
+            {/* PASSO 1 — Escanear QR */}
       <SLabel>PASSO 1 — ESCANEAR QR CODE DO CAMINHÃO</SLabel>
       {!camScanned ? (
         <Card style={{border:"1px solid #c4600a44"}}>
@@ -1110,6 +1187,7 @@ export default function App() {
   const [viagens,   setViagens]   = useState(VIAGENS_SEED);
   const [caminhoes, setCaminhoes] = useState(CAMINHOES_INIT);
   const [destinos,  setDestinos]  = useState(DESTINOS_INIT);
+  const [jazida,    setJazida]    = useState(JAZIDA_INIT);
   const [tabela,    setTabela]    = useState(TABELA_INIT);
   const [apiKey,    setApiKey]    = useState("");
   const [navTab,    setNavTab]    = useState("principal");
@@ -1159,7 +1237,7 @@ export default function App() {
       )}
       {usuario.perfil==="motorista"&&<TelaMotorista viagens={viagens} caminhoes={caminhoes} setCaminhoes={setCaminhoes} usuario={usuario} onSair={()=>setUsuario(null)}/>}
       {(usuario.perfil==="apontador"||(usuario.perfil==="gestor"&&navTab==="apontador"))&&
-        <TelaApontador viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} destinos={destinos} setDestinos={setDestinos} tabela={tabela} apiKey={apiKey} usuario={usuario}/>}
+        <TelaApontador viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} destinos={destinos} setDestinos={setDestinos} jazida={jazida} setJazida={setJazida} tabela={tabela} apiKey={apiKey} usuario={usuario}/>}
       {usuario.perfil==="gestor"&&navTab==="principal"&&
         <TelaGestor viagens={viagens} setViagens={setViagens} caminhoes={caminhoes} setCaminhoes={setCaminhoes} destinos={destinos} setDestinos={setDestinos} tabela={tabela} setTabela={setTabela} apiKey={apiKey} setApiKey={setApiKey}/>}
     </div>
