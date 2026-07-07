@@ -12,9 +12,9 @@ const USUARIOS = [
 ];
 
 const CAMINHOES_INIT = [
-  { id:1, placa:"ABC-1234", motorista:"João Silva",     freteiro:"Transportes Silva",   volumeM3:12, whatsapp:"65999990001", cpfCnpj:"", telefone:"" },
-  { id:2, placa:"DEF-5678", motorista:"Carlos Pereira", freteiro:"Pereira Fretamento",  volumeM3:14, whatsapp:"65999990002", cpfCnpj:"", telefone:"" },
-  { id:3, placa:"GHI-9012", motorista:"Maria Santos",   freteiro:"Santos & Cia",        volumeM3:10, whatsapp:"65999990003", cpfCnpj:"", telefone:"" },
+  { id:1, placa:"ABC-1234", motorista:"João Silva",     freteiro:"Transportes Silva",   volumeM3:12, whatsapp:"65999990001", cpfCnpj:"", telefone:"", modelo:"", cor:"" },
+  { id:2, placa:"DEF-5678", motorista:"Carlos Pereira", freteiro:"Pereira Fretamento",  volumeM3:14, whatsapp:"65999990002", cpfCnpj:"", telefone:"", modelo:"", cor:"" },
+  { id:3, placa:"GHI-9012", motorista:"Maria Santos",   freteiro:"Santos & Cia",        volumeM3:10, whatsapp:"65999990003", cpfCnpj:"", telefone:"", modelo:"", cor:"" },
 ];
 
 const DESTINOS_INIT = [
@@ -512,6 +512,7 @@ function TelaMotorista({viagens,caminhoes,setCaminhoes,usuario,onSair}) {
   const [eFret,setEFret]=useState(""); const [eVol,setEVol]=useState("");
   const [eWa,setEWa]=useState(""); const [eCpf,setECpf]=useState("");
   const [eTel,setETel]=useState("");
+  const [eModelo,setEModelo]=useState(""); const [eCor,setECor]=useState("");
   const [toast,setToast]=useState(null);
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3000);};
 
@@ -528,10 +529,10 @@ function TelaMotorista({viagens,caminhoes,setCaminhoes,usuario,onSair}) {
   const vHoje=viagens.filter(v=>v.caminhaoId===cam.id&&v.data===today());
   const vMes =viagens.filter(v=>v.caminhaoId===cam.id&&v.data.startsWith(new Date().toISOString().slice(0,7)));
 
-  const abrirEdit=()=>{setEMot(cam.motorista);setEPlaca(cam.placa);setEFret(cam.freteiro||"");setEVol(String(cam.volumeM3));setEWa(cam.whatsapp||"");setECpf(cam.cpfCnpj||"");setETel(cam.telefone||"");setEditando(true);};
+  const abrirEdit=()=>{setEMot(cam.motorista);setEPlaca(cam.placa);setEFret(cam.freteiro||"");setEVol(String(cam.volumeM3));setEWa(cam.whatsapp||"");setECpf(cam.cpfCnpj||"");setETel(cam.telefone||"");setEModelo(cam.modelo||"");setECor(cam.cor||"");setEditando(true);};
   const salvarPerfil=()=>{
     if(!ePlaca.trim()||!eMot.trim()){showToast("Placa e nome são obrigatórios!","error");return;}
-    setCaminhoes(p=>p.map(c=>c.id===cam.id?{...c,placa:ePlaca.toUpperCase().trim(),motorista:eMot.trim(),freteiro:eFret.trim(),volumeM3:parseFloat(eVol)||c.volumeM3,whatsapp:eWa.replace(/\D/g,""),cpfCnpj:eCpf.trim(),telefone:eTel.replace(/\D/g,"")}:c));
+    setCaminhoes(p=>p.map(c=>c.id===cam.id?{...c,placa:ePlaca.toUpperCase().trim(),motorista:eMot.trim(),freteiro:eFret.trim(),volumeM3:parseFloat(eVol)||c.volumeM3,whatsapp:eWa.replace(/\D/g,""),cpfCnpj:eCpf.trim(),telefone:eTel.replace(/\D/g,""),modelo:eModelo.trim(),cor:eCor.trim()}:c));
     setEditando(false);showToast("✅ Dados atualizados!");
   };
 
@@ -546,6 +547,7 @@ function TelaMotorista({viagens,caminhoes,setCaminhoes,usuario,onSair}) {
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
           <div>
             <div style={{fontWeight:800,fontSize:16}}>{cam.placa}</div>
+            {(cam.modelo||cam.cor)&&<div style={{fontSize:11,color:"#c4600a",fontWeight:700}}>{[cam.modelo,cam.cor].filter(Boolean).join(" \u00b7 ")}</div>}
             <div style={{fontSize:12,color:"#9090a0"}}>{cam.motorista} · {cam.freteiro}</div>
             <div style={{fontSize:11,color:"#c4600a"}}>Caçamba: {cam.volumeM3}m³</div>
             {cam.cpfCnpj&&<div style={{fontSize:11,color:"#9090a0",marginTop:2}}>CPF/CNPJ: {cam.cpfCnpj}</div>}
@@ -649,6 +651,8 @@ function TelaMotorista({viagens,caminhoes,setCaminhoes,usuario,onSair}) {
                 <div style={{display:"grid",gap:10}}>
                   {[
                     {label:"PLACA",       val:cam.placa},
+                    {label:"MODELO",      val:cam.modelo||"\u2014"},
+                    {label:"COR",         val:cam.cor||"\u2014"},
                     {label:"NOME",        val:cam.motorista},
                     {label:"EMPRESA/FRETEIRO", val:cam.freteiro||"—"},
                     {label:"CAÇAMBA",     val:cam.volumeM3+"m³"},
@@ -669,6 +673,8 @@ function TelaMotorista({viagens,caminhoes,setCaminhoes,usuario,onSair}) {
             <Card style={{border:"1px solid #c4600a44"}}>
               <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:12}}>✏️ EDITANDO MEUS DADOS</div>
               <Inp label="PLACA DO CAMINHÃO" value={ePlaca} onChange={e=>setEPlaca(e.target.value)} placeholder="Ex: ABC-1234"/>
+              <Inp label="MODELO DO CAMINHÃO" value={eModelo} onChange={e=>setEModelo(e.target.value)} placeholder="Ex: Scania R450, Volvo FH"/>
+              <Inp label="COR" value={eCor} onChange={e=>setECor(e.target.value)} placeholder="Ex: Branco, Vermelho"/>
               <Inp label="SEU NOME" value={eMot} onChange={e=>setEMot(e.target.value)} placeholder="Nome completo"/>
               <Inp label="EMPRESA / FRETEIRO" value={eFret} onChange={e=>setEFret(e.target.value)} placeholder="Nome da empresa"/>
               <Inp label="VOLUME DA CAÇAMBA (m³)" type="number" value={eVol} onChange={e=>setEVol(e.target.value)} placeholder="Ex: 12"/>
