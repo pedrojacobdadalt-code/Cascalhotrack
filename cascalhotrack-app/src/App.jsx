@@ -235,7 +235,13 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,jazida
   const [jLat,  setJLat]  = useState(String(jazida.lat));
   const [jLng,  setJLng]  = useState(String(jazida.lng));
   const [jGps,  setJGps]  = useState("idle");
+  const [cameraActive,  setCameraActive]  = useState(false);
+  const [cameraError,   setCameraError]   = useState(null);
   const mapPickerRef = useRef(null);
+  const videoRef    = useRef(null);
+  const canvasRef   = useRef(null);
+  const streamRef   = useRef(null);
+  const scanLoopRef = useRef(null);
   const [novoDNome,  setNovoDNome]  = useState("");
   const [novoDKm,    setNovoDKm]    = useState("");
 
@@ -258,6 +264,9 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,jazida
     };
     initMap();
   },[showMapPicker]);
+  const processarQR=(texto)=>{const p=texto.split(":");if(p[0]==="CASCALHOTRACK"&&p[1]){const placa=p[1];const cam=caminhoes.find(c=>c.placa===placa||c.id===parseInt(p[2]));if(cam){stopCam();setCamScanned(cam);showToast("✅ "+cam.placa+" identificado");return true;}}return false;};
+  const stopCam=()=>{if(scanLoopRef.current){cancelAnimationFrame(scanLoopRef.current);scanLoopRef.current=null;}if(streamRef.current){streamRef.current.getTracks().forEach(tk=>tk.stop());streamRef.current=null;}setCameraActive(false);};
+  const startCamera=async()=>{setCameraError(null);setCameraActive(true);try{if(!window.jsQR){await new Promise(res=>{const s=document.createElement("script");s.src="https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js";s.onload=res;document.head.appendChild(s);});}const stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment",width:{ideal:1280},height:{ideal:720}}});streamRef.current=stream;if(videoRef.current){videoRef.current.srcObject=stream;await videoRef.current.play();}const scan=()=>{const v=videoRef.current,c=canvasRef.current;if(!v||!c||!streamRef.current)return;if(v.readyState>=v.HAVE_ENOUGH_DATA){c.width=v.videoWidth;c.height=v.videoHeight;const ctx=c.getContext("2d");ctx.drawImage(v,0,0);const img=ctx.getImageData(0,0,c.width,c.height);const code=window.jsQR(img.data,img.width,img.height);if(code&&processarQR(code.data))return;}scanLoopRef.current=requestAnimationFrame(scan);};scanLoopRef.current=requestAnimationFrame(scan);}catch(err){setCameraError("Câmera indisponível: "+(err.message||"permissão negada"));setCameraActive(false);}};
   const vHoje=viagens.filter(v=>v.data===today());
   const naoSync=viagens.filter(v=>!v.sincronizado);
   const pendentes=viagens.filter(v=>v.distStatus==="gps_linha_reta");
@@ -417,21 +426,29 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,jazida
       <SLabel>PASSO 1 — ESCANEAR QR CODE DO CAMINHÃO</SLabel>
       {!camScanned ? (
         <Card style={{border:"1px solid #c4600a44"}}>
-          {!scanMode ? (
+          {cameraActive ? (
+            <div>
+              <div style={{position:"relative",borderRadius:8,overflow:"hidden",marginBottom:8,background:"#000"}}>
+                <video ref={videoRef} autoPlay playsInline muted style={{width:"100%",display:"block",maxHeight:280,objectFit:"cover"}}/>
+                <div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"60%",maxWidth:200,aspectRatio:"1",border:"2px solid #c4600a",borderRadius:8,pointerEvents:"none"}}/>
+                <canvas ref={canvasRef} style={{display:"none"}}/>
+              </div>
+              <div style={{textAlign:"center",fontSize:12,color:"#9090a0",marginBottom:10}}>🔄 Aponte para o QR Code do caminhão...</div>
+              <Btn full onClick={stopCam} color="#555">✕ CANCELAR</Btn>
+            </div>
+          ) : !scanMode ? (
             <div style={{textAlign:"center",padding:"8px 0"}}>
               <div style={{fontSize:40,marginBottom:8}}>📷</div>
               <div style={{fontSize:13,color:"#9090a0",marginBottom:12}}>Aponte a câmera para o QR Code colado no caminhão</div>
-              <Btn full onClick={()=>setScanMode(true)} color="linear-gradient(135deg,#c4600a,#8c3e00)" style={{fontSize:15,padding:"12px"}}>
+              {cameraError&&<div style={{color:"#e74c3c",fontSize:11,marginBottom:8,textAlign:"center"}}>{cameraError}</div>}
+              <Btn full onClick={startCamera} color="linear-gradient(135deg,#c4600a,#8c3e00)" style={{fontSize:15,padding:"12px"}}>
                 📷 ABRIR CÂMERA / ESCANEAR QR
               </Btn>
+              <div onClick={()=>{setCameraError(null);setScanMode(true);}} style={{textAlign:"center",marginTop:10,fontSize:11,color:"#7a7a8a",cursor:"pointer",textDecoration:"underline"}}>⌨️ Digitar placa manualmente</div>
             </div>
           ) : (
             <div>
-              <div style={{fontSize:12,color:"#c4600a",fontWeight:700,marginBottom:8}}>📷 SIMULAÇÃO DE SCANNER</div>
-              <div style={{fontSize:11,color:"#7a7a8a",marginBottom:8}}>
-                Em produção a câmera leria o QR automaticamente.<br/>
-                Para testar: digite a placa do caminhão abaixo.
-              </div>
+              <div style={{fontSize:12,color:"#c4600a",fontWeight:700,marginBottom:8}}>⌨️ DIGITAR PLACA MANUALMENTE</div>
               <Inp
                 placeholder="Digite a placa (ex: ABC-1234)"
                 value={scanInput}
