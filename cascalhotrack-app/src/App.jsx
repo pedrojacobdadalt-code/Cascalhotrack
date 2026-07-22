@@ -246,7 +246,7 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,jazida
   const [novoDKm,    setNovoDKm]    = useState("");
 
   const showToast=(msg,type="success")=>{setToast({msg,type});setTimeout(()=>setToast(null),3500);};
-  const addDestino=()=>{if(!novoDNome||!novoDKm){showToast("Preencha nome e dist\u00e2ncia!","error");return;}const id=Date.now();const m=parseInt(novoDKm)||0;setDestinos(p=>[...p,{id,nome:novoDNome,distanciaM:m}]);setSelDest(id);setNovoDNome("");setNovoDKm("");setShowNovoDest(false);showToast("Destino adicionado!");};
+  const addDestino=()=>{if(!novoDNome||!novoDKm){showToast("Preencha nome e distância!","error");return;}const id=Date.now();const m=parseInt(novoDKm)||0;setDestinos(p=>[...p,{id,nome:novoDNome,distanciaM:m}]);setSelDest(id);setNovoDNome("");setNovoDKm("");setShowNovoDest(false);showToast("Destino adicionado!");};
   const capturarGPSJazida=async()=>{setJGps("buscando");try{const c=await obterGPS();setJLat(String(c.lat));setJLng(String(c.lng));setJGps("ok");showToast("📍 Localização capturada!");}catch{setJGps("erro");showToast("GPS indisponível","error");}};
   const salvarJazida=()=>{const lt=parseFloat(jLat),ln=parseFloat(jLng);if(!jNome||isNaN(lt)||isNaN(ln)){showToast("Preencha todos os campos!","error");return;}setJazida({nome:jNome,lat:lt,lng:ln});setShowJazidaConfig(false);setShowMapPicker(false);showToast("✅ Jazida configurada!");};
   useEffect(()=>{
@@ -497,7 +497,7 @@ function TelaApontador({viagens,setViagens,caminhoes,destinos,setDestinos,jazida
         <Card style={{border:"1px solid #c4600a44",marginBottom:10}}>
           <div style={{fontSize:12,fontWeight:700,color:"#c4600a",marginBottom:10}}>➕ CADASTRAR NOVO DESTINO</div>
           <Inp label="NOME DO DESTINO" value={novoDNome} onChange={e=>setNovoDNome(e.target.value)} placeholder="Ex: Fazenda Boa Vista"/>
-          <Inp label="DIST\u00c2NCIA EM METROS" type="number" value={novoDKm} onChange={e=>setNovoDKm(e.target.value)} placeholder="Ex: 2500"/>
+          <Inp label="DISTÂNCIA EM METROS" type="number" value={novoDKm} onChange={e=>setNovoDKm(e.target.value)} placeholder="Ex: 2500"/>
           <div style={{display:"flex",gap:8,marginTop:4}}>
             <Btn full onClick={addDestino} color="#2ecc71">SALVAR ✅</Btn>
             <Btn onClick={()=>{setShowNovoDest(false);setNovoDNome("");setNovoDKm("");}} color="#555" style={{padding:"9px 16px"}}>CANCELAR</Btn>
